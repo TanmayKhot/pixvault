@@ -2,29 +2,62 @@ package main
 
 import (
 	"html/template"
-	"os"
+	"net/http"
 )
 
 type User struct {
-	Name string
-	Bio  string
-	Age  int
+	Name     string
+	Bio      string
+	Age      int
+	Friends  []string
+	Details  map[string]string
+	Admin    bool
+	Loggedin bool
 }
 
-func main() {
+func handler(w http.ResponseWriter, r *http.Request) {
+
 	t, err := template.ParseFiles("hello.gohtml")
 	if err != nil {
 		panic(err)
 	}
 
-	user := User{
-		Name: "John Smith",
-		Bio:  `<script>alert("Haha! you have been h4x0r3d");</script>`,
-		Age:  17,
+	users := []User{
+		{
+			Name:    "John Smith",
+			Bio:     `Haha! you have been h4x0r3d`,
+			Age:     17,
+			Friends: []string{"A", "B", "C"},
+			Details: map[string]string{
+				"City":   "New York",
+				"Age":    "25",
+				"School": "NYU",
+			},
+			Admin:    false,
+			Loggedin: true,
+		},
+		{
+			Name:    "Tommy Holfiger",
+			Bio:     `hey`,
+			Age:     37,
+			Friends: []string{"X", "Y", "Z"},
+			Details: map[string]string{
+				"City":   "LA",
+				"Age":    "35",
+				"School": "UCLA",
+			},
+			Admin:    true,
+			Loggedin: true,
+		},
 	}
-
-	err = t.Execute(os.Stdout, user)
+	err = t.Execute(w, users)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8080", nil)
+
 }

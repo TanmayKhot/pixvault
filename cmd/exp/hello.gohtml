@@ -1,8 +1,37 @@
-<script>
-    const user = {
-        "name": {{.Name}},
-        "bio": {{.Bio}},
-        "age": {{.Age}}
-    };
-    console.log(user)
-</script>
+<!DOCTYPE html>
+
+<html>
+    <title> Experiment with templates </title>
+    <body>
+    {{range .}}
+        <p>
+        "name": {{.Name}}, <br>
+        "bio": {{.Bio}}, <br>
+        "age": {{.Age}}, <br>
+        </p>
+    <ul>
+        {{range .Friends}}
+        <li> {{.}} </li>
+        {{end}}
+    </ul>
+    <h3> Details </h3>
+    <ul>
+        {{range $key, $value := .Details}}
+        <li>{{$key}} : {{$value}} </li>
+        {{end}}
+    </ul>
+    <h3> Get speific key </h3>
+    <p> {{index .Details "City"}} </p>
+    <h3> Using if, else-if and else statements </h3>
+
+    {{if .Admin}}
+    <p> Hi Admin </p>
+    {{else if .Loggedin}}
+    <p> Welcome to the website </p>
+    {{else}}
+    <p> Please login to continue </p>
+    {{end}}
+
+    {{end}}
+    </body>
+</html>
