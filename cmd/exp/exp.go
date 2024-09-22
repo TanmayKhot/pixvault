@@ -1,63 +1,38 @@
 package main
 
 import (
-	"html/template"
-	"net/http"
+	"fmt"
+	"log"
 )
 
-type User struct {
-	Name     string
-	Bio      string
-	Age      int
-	Friends  []string
-	Details  map[string]string
-	Admin    bool
-	Loggedin bool
+func Connect() error {
+	panic("Connection failed")
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-
-	t, err := template.ParseFiles("hello.gohtml")
+func CreateUser() error {
+	err := Connect()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("create user: %w", err)
 	}
+	return nil
+}
 
-	users := []User{
-		{
-			Name:    "John Smith",
-			Bio:     `Haha! you have been h4x0r3d`,
-			Age:     17,
-			Friends: []string{"A", "B", "C"},
-			Details: map[string]string{
-				"City":   "New York",
-				"Age":    "25",
-				"School": "NYU",
-			},
-			Admin:    false,
-			Loggedin: true,
-		},
-		{
-			Name:    "Tommy Holfiger",
-			Bio:     `hey`,
-			Age:     37,
-			Friends: []string{"X", "Y", "Z"},
-			Details: map[string]string{
-				"City":   "LA",
-				"Age":    "35",
-				"School": "UCLA",
-			},
-			Admin:    true,
-			Loggedin: true,
-		},
-	}
-	err = t.Execute(w, users)
+func CreateOrg() error {
+	err := CreateUser()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("create org: %w", err)
 	}
+	return nil
 }
 
 func main() {
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	err := CreateUser()
+	if err != nil {
+		log.Println(err)
+	}
 
+	err = CreateOrg()
+	if err != nil {
+		log.Println(err)
+	}
 }
