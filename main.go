@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/TanmayKhot/pixvault/controllers"
+	"github.com/TanmayKhot/pixvault/templates"
 	"github.com/TanmayKhot/pixvault/views"
 	"github.com/go-chi/chi/v5"
 )
@@ -13,13 +14,13 @@ func main() {
 
 	r := chi.NewRouter()
 
-	homeTpl := views.Must(views.Parse("templates/home.gohtml"))
+	homeTpl := views.Must(views.ParseFS(templates.FS, "home.gohtml", "tailwind.gohtml"))
 	r.Get("/", controllers.StaticHandler(homeTpl))
 
-	contactTpl := views.Must(views.Parse("templates/contact.gohtml"))
+	contactTpl := views.Must(views.ParseFS(templates.FS, "contact.gohtml", "tailwind.gohtml"))
 	r.Get("/contact", controllers.StaticHandler(contactTpl))
 
-	faqTpl := views.Must(views.Parse("templates/faq.gohtml"))
+	faqTpl := views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))
 	r.Get("/faq", controllers.StaticHandler(faqTpl))
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
