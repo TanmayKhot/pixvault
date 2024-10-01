@@ -9,6 +9,7 @@ import (
 	"github.com/TanmayKhot/pixvault/templates"
 	"github.com/TanmayKhot/pixvault/views"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/csrf"
 )
 
 func main() {
@@ -47,10 +48,18 @@ func main() {
 	usersC.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "signin.gohtml", "tailwind.gohtml"))
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)
+	r.Get("/users/me", usersC.CurrentUser)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
 	fmt.Println("Starting the server on :3000..")
-	http.ListenAndServe(":3000", r)
+
+	// Adding CSRF security
+	csrfKey := "gFvi45R4fy5xNBlnEeZtQbfAVCYEIAUX"
+	csrf_middleware := csrf.Protect(
+		[]byte(csrfKey),
+		csrf.Secure(false), // Will update at the time of deployment
+	)
+	http.ListenAndServe(":3000", csrf_middleware(r))
 }
