@@ -13,38 +13,53 @@ type Users struct {
 		New    Template
 		SignIn Template
 	}
-	UserService *models.UserService
+	UserService    *models.UserService
+	SessionService *models.SessionService
 }
 
+// Render the webpage for signup, get user inputs
 func (u Users) New(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Email string
 	}
 	data.Email = r.FormValue("email")
-	u.Templates.New.Execute(w, data)
-
+	u.Templates.New.Execute(w, r, data)
 }
 
+// Read the data from the user and create a new user
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
+	// UserService is used to create the new user and insert in DB
 	user, err := u.UserService.Create(email, password)
 	if err != nil {
 		fmt.Println("Error creating user %w", err)
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(w, "User is created: %+v", user)
+
+	// Create a new session and cookie for the user created
+	session, err := u.SessionService.Create(user.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Redirect(w, r, "signin", http.StatusFound)
+		return
+	}
+
+	setCookie(w, CookieSession, session.Token)
+	http.Redirect(w, r, "users/me", http.StatusFound)
 }
 
+// Render the signin page, get user input
 func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Email string
 	}
 	data.Email = r.FormValue("email")
-	u.Templates.SignIn.Execute(w, data)
+	u.Templates.SignIn.Execute(w, r, data)
 }
 
+// Validate user inputs for Signin
 func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Email    string
@@ -53,6 +68,7 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	data.Email = r.FormValue("email")
 	data.Password = r.FormValue("password")
 
+	// User service authenticates the credentials with the DB
 	user, err := u.UserService.Authenticate(data.Email, data.Password)
 	if err != nil {
 		fmt.Println(err)
@@ -60,23 +76,33 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie := http.Cookie{
-		Name:     "email",
-		Value:    user.Email,
-		Path:     "/",
-		HttpOnly: true,
+	// If credentials are valid, create a new session and setup a cookie
+	session, err := u.SessionService.Create(user.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
 	}
-	http.SetCookie(w, &cookie)
+
+	setCookie(w, CookieSession, session.Token)
 
 	fmt.Fprintf(w, "User authenticated", user)
 }
 
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	email, err := r.Cookie("email")
+	token, err := readCookie(r, CookieSession)
+	// If we don't have a cookie for the user then we ask them to login again, create a new cookie
+	// to track the new session
 	if err != nil {
-		fmt.Fprintf(w, "Error reading the cookie")
+		fmt.Println(err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
-	fmt.Fprintf(w, "Email cookie: %s\n", email.Value)
-	fmt.Fprintf(w, "Headers: %+v\n", r.Header)
+	user, err := u.SessionService.User(token)
+	if err != nil {
+		fmt.Println(err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
+		return
+	}
+	fmt.Fprintf(w, "Email cookie: %s\n", user.Email)
 }
