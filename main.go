@@ -55,6 +55,12 @@ func main() {
 	r.Get("/users/me", usersC.CurrentUser)
 	r.Post("/signout", usersC.ProcessSignOut)
 
+	// ---------------------------
+	usersC.Templates.UserProfile = views.Must(views.ParseFS(templates.FS, "userprofile.gohtml", "tailwind.gohtml"))
+	r.Get("/users/me", usersC.CurrentUser)
+
+	// ---------------------------
+
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})

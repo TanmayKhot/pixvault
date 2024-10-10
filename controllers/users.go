@@ -8,10 +8,11 @@ import (
 )
 
 type Users struct {
-	// This tstruct will contain all objects of type Template organized
+	// This struct will contain all objects of type Template organized
 	Templates struct {
-		New    Template
-		SignIn Template
+		New         Template
+		SignIn      Template
+		UserProfile Template // -------------------
 	}
 	UserService    *models.UserService
 	SessionService *models.SessionService
@@ -85,7 +86,7 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setCookie(w, CookieSession, session.Token)
-
+	http.Redirect(w, r, "users/me", http.StatusFound)
 	fmt.Fprintf(w, "User authenticated", user)
 }
 
@@ -104,7 +105,14 @@ func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
-	fmt.Fprintf(w, "Email cookie: %s\n", user.Email)
+	//fmt.Fprintf(w, "Email cookie: %s\n", user.Email)
+	// ---------------------------------
+	var data struct {
+		Email string
+	}
+	data.Email = user.Email
+	u.Templates.UserProfile.Execute(w, r, data)
+	// ------------------
 }
 
 func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
@@ -112,8 +120,7 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 	// 1. Read current session token
 	token, err := readCookie(r, CookieSession)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
 
