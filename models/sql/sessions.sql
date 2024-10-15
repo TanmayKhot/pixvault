@@ -1,5 +1,0 @@
-CREATE TABLE SESSIONS (
-    id serial PRIMARY KEY,
-    user_id INT UNIQUE REFERENCES users (id) ON DELETE CASCADE,
-    token_hash  TEST UNIQUE NOT NULL 
-)

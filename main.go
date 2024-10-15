@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/TanmayKhot/pixvault/controllers"
+	"github.com/TanmayKhot/pixvault/migrations"
 	"github.com/TanmayKhot/pixvault/models"
 	"github.com/TanmayKhot/pixvault/templates"
 	"github.com/TanmayKhot/pixvault/views"
@@ -31,6 +32,11 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
+
+	err = models.MigrateFS(db, migrations.FS, ".")
+	if err != nil {
+		panic(err)
+	}
 
 	userService := models.UserService{
 		DB: db,
