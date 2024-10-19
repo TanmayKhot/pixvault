@@ -1,4 +1,4 @@
-# pixvault
+# Pixvault
 
-`docker compose exec` is used to run the docker container <br>
-`docker compose exec -it db psql -U user -d pixvault` is used to query the PostGreSQL table
+Pixvault is a photo storage and management application inspired by Google Photos. <br>
+This app allows users to upload, organize, and view their photos in a streamlined and user-friendly interface.
