@@ -83,9 +83,10 @@ func (ss *SessionService) User(token string) (*User, error) {
 	/*
 		Operation logic
 		1. Hash the session token
-		2. Query for the session with that token
-		3. Using the userID from that session, we need to query for that user
-		4. Return the user
+		2. Query the database for the session with that token
+		3. Get the userID from session
+		4. Query the database for that user
+		5. Return the user
 	*/
 
 	var user User

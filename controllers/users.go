@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/TanmayKhot/pixvault/context"
 	"github.com/TanmayKhot/pixvault/models"
 )
 
@@ -90,6 +91,8 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "User authenticated", user)
 }
 
+// Finding the user using Cookie token + session + DB query
+/*
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	token, err := readCookie(r, CookieSession)
 	// If we don't have a cookie for the user then we ask them to login again, create a new cookie
@@ -114,6 +117,13 @@ func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	u.Templates.UserProfile.Execute(w, r, data)
 	// ------------------
 }
+*/
+// CurrentUser function using Context.
+// SetUser and RequireUser middleware are required.
+func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
+	user := context.User(r.Context())
+	fmt.Fprintf(w, "Current user: %s\n", user.Email)
+}
 
 func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 
@@ -137,4 +147,48 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 
 	// 4. Redirect the user to signin page after logging them out
 	http.Redirect(w, r, "/signin", http.StatusFound)
+}
+
+type UserMiddleware struct {
+	SessionService *models.SessionService
+}
+
+func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		token, err := readCookie(r, CookieSession)
+		if err != nil {
+			// Cannot lookup the user's cookie/session so we continue with the next handler
+			// For example, the user could be looking at our Home page
+			// And we do not need a session tracking with cookies for that. It can be processed without sesison
+			next.ServeHTTP(w, r)
+			return
+		}
+		user, err := umw.SessionService.User(token)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctx := r.Context()                // Get the context from request
+		ctx = context.WithUser(ctx, user) // Update the context by adding a new user to UserKey
+		r = r.WithContext(ctx)            // This updates the old request with new request which has user context
+		next.ServeHTTP(w, r)              // Pass updated request, with context having user info to next handler
+	})
+
+}
+
+// Some pages must require a user to be present in the request context (such as viewing or editing galleries)
+// If user is not present in the context, we redirect them to signin
+// If it is present then we call the next handlerfunc()
+func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := context.User(r.Context())
+		if user == nil {
+			http.Redirect(w, r, "/signin", http.StatusFound)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

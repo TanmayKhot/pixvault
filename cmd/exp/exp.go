@@ -1,33 +1,21 @@
 package main
 
 import (
+	stdctx "context"
 	"fmt"
 
+	"github.com/TanmayKhot/pixvault/context"
 	"github.com/TanmayKhot/pixvault/models"
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 func main() {
-	cfg := models.DefaultPostgresConfig()
+	ctx := stdctx.Background()
+	user := models.User{
+		Email: "a@a.com",
+	}
 
-	db, err := models.OpenDBConnection(cfg)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Connected!")
-
-	us := models.UserService{
-		DB: db,
-	}
-	user, err := us.Create("bob@bobross.com", "bob123")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(user)
+	ctx = context.WithUser(ctx, &user)
+	retrieveduser := context.User(ctx)
+	fmt.Println(retrieveduser.Email)
 }
