@@ -70,12 +70,12 @@ func main() {
 	r.Get("/", controllers.StaticHandler(views.Must(views.ParseFS(templates.FS, "home.gohtml", "tailwind.gohtml"))))
 	r.Get("/contact", controllers.StaticHandler(views.Must(views.ParseFS(templates.FS, "contact.gohtml", "tailwind.gohtml"))))
 	r.Get("/faq", controllers.FAQhandler(views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))))
+	r.Get("/users/me", controllers.FAQhandler(views.Must(views.ParseFS(templates.FS, "userprofile.gohtml", "tailwind.gohtml"))))
 	r.Get("/signup", usersC.New)
 	r.Post("/signup", usersC.Create)
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)
 	r.Post("/signout", usersC.ProcessSignOut)
-	//r.Get("/users/me", usersC.CurrentUser)
 	r.Route("/users/me", func(r chi.Router) {
 		r.Use(umw.RequireUser)
 		r.Get("/", usersC.CurrentUser)
