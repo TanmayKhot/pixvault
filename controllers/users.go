@@ -122,12 +122,12 @@ func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 // SetUser and RequireUser middleware are required.
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	user := context.User(r.Context())
-	//fmt.Fprintf(w, "Current user: %s\n", user.Email)
 	var data struct {
 		Email string
 	}
 	data.Email = user.Email
 	u.Templates.UserProfile.Execute(w, r, data)
+
 }
 
 func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
