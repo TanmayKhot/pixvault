@@ -8,32 +8,28 @@
 </head>
 <body class="flex flex-col min-h-screen bg-gray-300">
     <header class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white">
-        <nav class="px-8 py-6 flex items-center space-x-12">
-            <div class="text-4xl font-serif"><a href="/">Pixvault</a></div>
-            <div class="flex-grow">
-                <a class="text-lg font-semibold hover:text-blue-100 pr-8" href="/">
-                  Home
-                </a>
-                <a class="text-lg font-semibold hover:text-blue-100 pr-8" href="/contact">
-                  Contact
-                </a>
-                <a class="text-lg font-semibold hover:text-blue-100 pr-8" href="/faq">
-                  FAQ
-                </a>
-             <div class="space-x-4">
+        <nav class="px-8 py-6 flex items-center justify-between">
+            <div class="text-5xl font-serif mr-8"><a href="/">Pixvault</a></div>
+          </div>
+          <div class="flex space-x-8">
+              <a class="text-lg font-semibold hover:text-blue-100" href="/">Home</a>
+              <a class="text-lg font-semibold hover:text-blue-100" href="/contact">Contact</a>
+              <a class="text-lg font-semibold hover:text-blue-100" href="/faq">FAQ</a>
+          </div>
+          <div class="ml-auto space-x-4">
               {{if currentUser}}
-                <form action="/signout" method="post" class="inline pr-4">
+              <form action="/signout" method="post" class="inline">
                   <div class="hidden">
-                    {{csrfField}}
+                      {{csrfField}}
                   </div>
-                  <button type="submit">Sign out</button>
-                </form>
-                {{else}}
-                <a href="/signin">Sign in</a>
-                <a href="/signup" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded">
+                  <button type="submit" class="text-lg">Sign out</button>
+              </form>
+              {{else}}
+              <a href="/signin" class="text-lg">Sign in</a>
+              <a href="/signup" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded text-lg">
                   Sign up
-                </a>
-                {{end}}
+              </a>
+              {{end}}
             </div>
         </nav>
     </header>

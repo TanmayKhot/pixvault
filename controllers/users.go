@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/TanmayKhot/pixvault/context"
 	"github.com/TanmayKhot/pixvault/models"
@@ -11,12 +12,16 @@ import (
 type Users struct {
 	// This struct will contain all objects of type Template organized
 	Templates struct {
-		New         Template
-		SignIn      Template
-		UserProfile Template
+		New            Template
+		SignIn         Template
+		UserProfile    Template
+		ForgotPassword Template
+		CheckYourEmail Template
 	}
-	UserService    *models.UserService
-	SessionService *models.SessionService
+	UserService          *models.UserService
+	SessionService       *models.SessionService
+	PasswordResetService *models.PasswordResetService
+	EmailService         *models.EmailService
 }
 
 // Render the webpage for signup, get user inputs
@@ -196,4 +201,46 @@ func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// ForgotPassword handler
+func (u Users) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	// This method is used to get input (email) from the user
+	var data struct {
+		Email string
+	}
+	data.Email = r.FormValue("email")
+	u.Templates.ForgotPassword.Execute(w, r, data)
+}
+
+// Process the input for ForgotPassword
+func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email string
+	}
+	data.Email = r.FormValue("email")
+
+	// Create the passwordreset token
+	pwReset, err := u.PasswordResetService.Create(data.Email)
+	if err != nil {
+		// TODO: Handle other cases in future
+		// For eg: user email doesn't exist
+		fmt.Println("Password Reset error token creation: ", err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	vals := url.Values{
+		"token": {pwReset.Token},
+	}
+	// Make the URL here configurable
+	resetURL := "https://www.pixvault.com/reset-pw?" + vals.Encode()
+	err = u.EmailService.ForgotPassword(data.Email, resetURL)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	u.Templates.CheckYourEmail.Execute(w, r, data)
 }

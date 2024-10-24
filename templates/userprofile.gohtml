@@ -1,38 +1,7 @@
-<!doctype html>
-<html>
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
-</head>
-<body class="flex flex-col min-h-screen bg-gray-300">
-    <header class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white">
-        <nav class="px-8 py-6 flex items-center space-x-12">
-            <div class="text-4xl font-serif"><a href="/">Pixvault</a></div>
-            <div class="flex-grow">
-  
-            </div>
-              <div class="space-x-4">
-                <a href="/users/me">{{.Email}}</a>
-                <form action="/signout" method="post" class="inline pr-4">
-                  <div class="hidden">
-                    {{csrfField}}
-                  </div>
-                  <button type="submit">Sign out</button>
-                </form>
-              </div>
-        </nav>
-    </header>
-
-    <footer class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white mt-auto">
-        <div class="px-8 py-6 flex items-center justify-between">
-            <div class="text-lg font-serif">&copy; 2024 Pixvault. All rights reserved.</div>
-            <div class="space-x-4">
-                <a class="hover:text-blue-100" href="/terms">Terms</a>
-                <a class="hover:text-blue-100" href="/privacy">Privacy</a>
-                <a class="hover:text-blue-100" href="/contact">Contact</a>
-            </div>
-        </div>
-    </footer>
-</body>
-</html>
+{{template "header" .}}
+<div class="px-6">
+  <h1 class="py-4 text-4xl semibold tracking-tight">
+    Welcome, {{.Email}}
+  </h1>
+</div>
+{{template "footer" .}}
