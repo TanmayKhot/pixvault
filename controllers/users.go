@@ -12,17 +12,20 @@ import (
 type Users struct {
 	// This struct will contain all objects of type Template organized
 	Templates struct {
-		New            Template
-		SignIn         Template
-		UserProfile    Template
-		ForgotPassword Template
-		CheckYourEmail Template
-		ResetPassword  Template
+		New             Template
+		SignIn          Template
+		UserProfile     Template
+		ForgotPassword  Template
+		CheckYourEmail  Template
+		ResetPassword   Template
+		EmailSignin     Template
+		SigninWithEmail Template
 	}
 	UserService          *models.UserService
 	SessionService       *models.SessionService
 	PasswordResetService *models.PasswordResetService
 	EmailService         *models.EmailService
+	EmailSigninService   *models.EmailSigninService
 }
 
 // Render the webpage for signup, get user inputs
@@ -95,6 +98,69 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	setCookie(w, CookieSession, session.Token)
 	http.Redirect(w, r, "users/me", http.StatusFound)
 	fmt.Fprintf(w, "User authenticated", user)
+}
+
+// Signin using Email
+func (u Users) EmailSignin(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email string
+	}
+	data.Email = r.FormValue("email")
+	u.Templates.SigninWithEmail.Execute(w, r, data)
+}
+
+// Add a handler for processing email signin
+func (u Users) ProcessEmailSignin(w http.ResponseWriter, r *http.Request) {
+
+	var data struct {
+		Email string
+	}
+	data.Email = r.FormValue("email")
+
+	// Create the email signin token
+	emailSignin, err := u.EmailSigninService.Create(data.Email)
+	if err != nil {
+		fmt.Println("EmailSignin token: %w", err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	vals := url.Values{
+		"token": {emailSignin.Token}}
+
+	// Make the URL here configurable
+	resetURL := "https://www.pixvault.com/email-signin?" + vals.Encode()
+	err = u.EmailService.EmailSignin(data.Email, resetURL)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	u.Templates.CheckYourEmail.Execute(w, r, data)
+}
+
+func (u Users) VerifyEmailSignin(w http.ResponseWriter, r *http.Request) {
+	// Retrieve the token from the URL query parameters
+
+	token := r.URL.Query().Get("token")
+
+	user, err := u.EmailSigninService.Consume(token)
+	if err != nil {
+		fmt.Println(err)
+		//TODO: Distinguish between server errors and Invalid token errors
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	// Sign in the user now that they have reset their password
+	// If any errors, redirect the user to singin page
+	session, err := u.SessionService.Create(user.ID)
+	if err != nil {
+		fmt.Println("Error creating new session", err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
+		return
+	}
+	setCookie(w, CookieSession, session.Token)
+	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
 
 // Finding the user using Cookie token + session + DB query

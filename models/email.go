@@ -93,3 +93,17 @@ func (es *EmailService) ForgotPassword(to, resetURL string) error {
 	}
 	return nil
 }
+
+func (es *EmailService) EmailSignin(to, resetURL string) error {
+	email := Email{
+		Subject:   "Login to Pixvault",
+		To:        to,
+		Plaintext: "Please visit the following link to signin: " + resetURL,
+		HTML:      `<p>Please visit the following link to signin: <a href="` + resetURL + `">` + resetURL + `</a></p>`,
+	}
+	err := es.Send(email)
+	if err != nil {
+		return fmt.Errorf("Email signin: %w", err)
+	}
+	return nil
+}

@@ -93,6 +93,9 @@ func main() {
 	pwResetService := &models.PasswordResetService{
 		DB: db,
 	}
+	emailSigninService := &models.EmailSigninService{
+		DB: db,
+	}
 	emailService := models.NewEmailService(cfg.SMTP)
 
 	// Setup middleware
@@ -106,6 +109,7 @@ func main() {
 		SessionService:       sessionService,
 		PasswordResetService: pwResetService,
 		EmailService:         emailService,
+		EmailSigninService:   emailSigninService,
 	}
 
 	usersC.Templates.New = views.Must(views.ParseFS(
@@ -119,8 +123,9 @@ func main() {
 	usersC.Templates.CheckYourEmail = views.Must(views.ParseFS(
 		templates.FS, "check-your-email.gohtml", "tailwind.gohtml"))
 	usersC.Templates.ResetPassword = views.Must(views.ParseFS(
-		templates.FS, "reset-pw.gohtml", "tailwind.gohtml",
-	))
+		templates.FS, "reset-pw.gohtml", "tailwind.gohtml"))
+	usersC.Templates.SigninWithEmail = views.Must(views.ParseFS(
+		templates.FS, "signin-with-email.gohtml", "tailwind.gohtml"))
 	// Set up router and routes
 	r := chi.NewRouter()
 
@@ -150,6 +155,9 @@ func main() {
 	})
 	r.Get("/forgot-pw", usersC.ForgotPassword)
 	r.Post("/forgot-pw", usersC.ProcessForgotPassword)
+	r.Get("/signin-with-email", usersC.EmailSignin)
+	r.Post("/signin-with-email", usersC.ProcessEmailSignin)
+	r.Get("/email-signin", usersC.VerifyEmailSignin)
 
 	// Start the server
 	fmt.Println("Starting the server on %s...", cfg.Server.Address)

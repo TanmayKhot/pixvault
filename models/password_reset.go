@@ -133,7 +133,7 @@ func (service *PasswordResetService) Consume(token string) (*User, error) {
 func (service *PasswordResetService) delete(id int) error {
 	_, err := service.DB.Exec(`
 	DELETE FROM password_resets
-	WHERE id = $1;`, id)
+	WHERE user_id = $1;`, id)
 
 	if err != nil {
 		return fmt.Errorf("delete: %w", err)
