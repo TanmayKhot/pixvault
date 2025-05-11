@@ -2,7 +2,6 @@ package models
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 )
 
@@ -42,11 +41,12 @@ func (service *GalleryService) ByID(id int) (*Gallery, error) {
 	err := row.Scan(&gallery.Title, &gallery.UserID)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if err == sql.ErrNoRows {
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("query gallery by id :%w", err)
 	}
+
 	return &gallery, nil
 }
 
@@ -54,7 +54,7 @@ func (service *GalleryService) ByUserID(userID int) ([]Gallery, error) {
 	rows, err := service.DB.Query(`
 		SELECT id, title
 		FROM galleries
-		WHERE user = $1;`, userID)
+		WHERE user_id = $1;`, userID)
 
 	if err != nil {
 		return nil, fmt.Errorf("query galleries by user: %w", err)

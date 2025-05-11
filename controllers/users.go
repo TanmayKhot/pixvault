@@ -157,7 +157,6 @@ func (u Users) VerifyEmailSignin(w http.ResponseWriter, r *http.Request) {
 	user, err := u.EmailSigninService.Consume(token)
 	if err != nil {
 		fmt.Println(err)
-		//TODO: Distinguish between server errors and Invalid token errors
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}

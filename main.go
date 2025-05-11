@@ -134,7 +134,15 @@ func main() {
 		templates.FS, "reset-pw.gohtml", "tailwind.gohtml"))
 	usersC.Templates.SigninWithEmail = views.Must(views.ParseFS(
 		templates.FS, "signin-with-email.gohtml", "tailwind.gohtml"))
-	galleriesC.Templates.New = views.Must(views.ParseFS(templates.FS, "galleries/new.gohtml", "tailwind.gohtml"))
+	galleriesC.Templates.New = views.Must(views.ParseFS(
+		templates.FS, "galleries/new.gohtml", "tailwind.gohtml"))
+	galleriesC.Templates.Edit = views.Must(views.ParseFS(
+		templates.FS, "galleries/edit.gohtml", "tailwind.gohtml"))
+	galleriesC.Templates.Index = views.Must(views.ParseFS(
+		templates.FS, "galleries/index.gohtml", "tailwind.gohtml"))
+	galleriesC.Templates.Show = views.Must(views.ParseFS(
+		templates.FS, "galleries/show.gohtml", "tailwind.gohtml"))
+
 	// Set up router and routes
 	r := chi.NewRouter()
 
@@ -168,10 +176,14 @@ func main() {
 	r.Post("/signin-with-email", usersC.ProcessEmailSignin)
 	r.Get("/email-signin", usersC.VerifyEmailSignin)
 	r.Route("/galleries", func(r chi.Router) { //We want to restrict access to this page only to signed in users. Without that, anyone can open this page
+		r.Get("/{id}", galleriesC.Show)
 		r.Group(func(r chi.Router) {
 			r.Use(umw.RequireUser)
+			r.Get("/", galleriesC.Index)
 			r.Get("/new", galleriesC.New)
 			r.Post("/", galleriesC.Create)
+			r.Get("/{id}/edit", galleriesC.Edit)
+			r.Post("/{id}", galleriesC.Update)
 		})
 	})
 
