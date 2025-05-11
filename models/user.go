@@ -69,12 +69,15 @@ func (us UserService) Authenticate(email, password string) (*User, error) {
 	 WHERE email = $1;`, email)
 	err := row.Scan(&user.ID, &user.PasswordHash)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrInvalidCredentials
+		}
 		return nil, fmt.Errorf("Authenticate %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return nil, fmt.Errorf("Authentication %w", err)
+		return nil, ErrInvalidCredentials
 	}
 
 	return &user, nil

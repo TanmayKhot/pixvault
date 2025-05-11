@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/TanmayKhot/pixvault/context"
+	"github.com/TanmayKhot/pixvault/errors"
 	"github.com/TanmayKhot/pixvault/models"
 )
 
@@ -49,6 +50,9 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	// UserService is used to create the new user and insert in DB
 	user, err := u.UserService.Create(data.Email, data.Password)
 	if err != nil {
+		if errors.Is(err, models.ErrEmailTaken) {
+			err = errors.Public(err, "That email address is already associated with an account.")
+		}
 		u.Templates.New.Execute(w, r, data, err)
 		return
 	}
@@ -56,8 +60,8 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	// Create a new session and cookie for the user created
 	session, err := u.SessionService.Create(user.ID)
 	if err != nil {
-		fmt.Println(err)
-		http.Redirect(w, r, "signin", http.StatusFound)
+		publicErr := errors.Public(err, "Oops! Something went wrong while signing you in. Please try again.")
+		u.Templates.New.Execute(w, r, data, publicErr)
 		return
 	}
 
@@ -86,6 +90,10 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	// User service authenticates the credentials with the DB
 	user, err := u.UserService.Authenticate(data.Email, data.Password)
 	if err != nil {
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			u.Templates.SignIn.Execute(w, r, data, err)
+			return
+		}
 		fmt.Println(err)
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
@@ -101,7 +109,6 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 
 	setCookie(w, CookieSession, session.Token)
 	http.Redirect(w, r, "users/me", http.StatusFound)
-	fmt.Fprintf(w, "User authenticated", user)
 }
 
 // Signin using Email
@@ -330,7 +337,7 @@ func (u Users) ResetPassword(w http.ResponseWriter, r *http.Request) {
 func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
 	// Functioning
 	// 1. Attempt to consume the token.
-	// 2. Update the user’s password.
+	// 2. Update the user's password.
 	// 3. Create a new session.
 	// 4. Sign the user in.
 	// 5. Redirect them to the /users/me page.
