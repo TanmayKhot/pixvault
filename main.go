@@ -81,6 +81,7 @@ func main() {
 	csrf_middleware := csrf.Protect(
 		[]byte(cfg.CSRF.Key),
 		csrf.Secure(cfg.CSRF.Secure),
+		csrf.Path("/"), // Using a fixed path will ensure that the CSRF cookie value is read at all page addresses, even sub pages within gallery
 	)
 
 	// Setup services
@@ -97,6 +98,9 @@ func main() {
 		DB: db,
 	}
 	emailService := models.NewEmailService(cfg.SMTP)
+	galleryService := &models.GalleryService{
+		DB: db,
+	}
 
 	// Setup middleware
 	umw := controllers.UserMiddleware{
@@ -111,7 +115,11 @@ func main() {
 		EmailService:         emailService,
 		EmailSigninService:   emailSigninService,
 	}
+	galleriesC := controllers.Galleries{
+		GalleryService: galleryService,
+	}
 
+	// Parse templates
 	usersC.Templates.New = views.Must(views.ParseFS(
 		templates.FS, "signup.gohtml", "tailwind.gohtml"))
 	usersC.Templates.SignIn = views.Must(views.ParseFS(
@@ -126,6 +134,7 @@ func main() {
 		templates.FS, "reset-pw.gohtml", "tailwind.gohtml"))
 	usersC.Templates.SigninWithEmail = views.Must(views.ParseFS(
 		templates.FS, "signin-with-email.gohtml", "tailwind.gohtml"))
+	galleriesC.Templates.New = views.Must(views.ParseFS(templates.FS, "galleries/new.gohtml", "tailwind.gohtml"))
 	// Set up router and routes
 	r := chi.NewRouter()
 
@@ -146,7 +155,7 @@ func main() {
 	r.Post("/signout", usersC.ProcessSignOut)
 	r.Get("/reset-pw", usersC.ResetPassword)
 	r.Post("/reset-pw", usersC.ProcessResetPassword)
-	r.Route("/users/me", func(r chi.Router) {
+	r.Route("/users/me", func(r chi.Router) { //We want to restrict access to this page only to signed in users. Without that, anyone can open this page
 		r.Use(umw.RequireUser)
 		r.Get("/", usersC.CurrentUser)
 	})
@@ -158,6 +167,13 @@ func main() {
 	r.Get("/signin-with-email", usersC.EmailSignin)
 	r.Post("/signin-with-email", usersC.ProcessEmailSignin)
 	r.Get("/email-signin", usersC.VerifyEmailSignin)
+	r.Route("/galleries", func(r chi.Router) { //We want to restrict access to this page only to signed in users. Without that, anyone can open this page
+		r.Group(func(r chi.Router) {
+			r.Use(umw.RequireUser)
+			r.Get("/new", galleriesC.New)
+			r.Post("/", galleriesC.Create)
+		})
+	})
 
 	// Start the server
 	fmt.Println("Starting the server on %s...", cfg.Server.Address)

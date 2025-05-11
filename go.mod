@@ -11,6 +11,7 @@ require (
 
 require (
 	github.com/go-mail/mail/v2 v2.3.0 // indirect
+	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect

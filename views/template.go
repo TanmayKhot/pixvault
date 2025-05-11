@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/TanmayKhot/pixvault/context"
 	"github.com/TanmayKhot/pixvault/models"
@@ -18,7 +19,7 @@ type Template struct {
 	htmlTpl *template.Template
 }
 
-func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}) {
+func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}, errs ...error) {
 	tpl, err := t.htmlTpl.Clone()
 	if err != nil {
 		log.Printf("cloning template: %v", err)
@@ -32,6 +33,14 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 			},
 			"currentUser": func() *models.User {
 				return context.User(r.Context())
+			},
+			"errors": func() []string {
+				var errorMessages []string
+				for _, err := range errs {
+					// TODO: Don't keep this long term - we will see why in a later lesson
+					errorMessages = append(errorMessages, err.Error())
+				}
+				return errorMessages
 			},
 		},
 	)
@@ -54,7 +63,7 @@ func Must(t Template, err error) Template {
 }
 
 func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
-	tpl := template.New(patterns[0])
+	tpl := template.New(filepath.Base(patterns[0])) // Using (filepath.Base(patterns[0])) in order to read templates from different directories
 	tpl = tpl.Funcs(
 		template.FuncMap{
 			"csrfField": func() (template.HTML, error) {
@@ -62,6 +71,9 @@ func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 			},
 			"currentUser": func() (*models.User, error) {
 				return nil, fmt.Errorf("currentUser not implemented")
+			},
+			"errors": func() []string {
+				return nil
 			},
 		},
 	)

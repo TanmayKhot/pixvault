@@ -39,13 +39,17 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 
 // Read the data from the user and create a new user
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	password := r.FormValue("password")
+
+	var data struct {
+		Email    string
+		Password string
+	}
+	data.Email = r.FormValue("email")
+	data.Password = r.FormValue("password")
 	// UserService is used to create the new user and insert in DB
-	user, err := u.UserService.Create(email, password)
+	user, err := u.UserService.Create(data.Email, data.Password)
 	if err != nil {
-		fmt.Println("Error creating user %w", err)
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		u.Templates.New.Execute(w, r, data, err)
 		return
 	}
 
