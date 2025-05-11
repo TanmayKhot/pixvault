@@ -13,7 +13,6 @@ import (
 )
 
 // rendering the new gallery page
-
 type Galleries struct {
 	Templates struct {
 		New   Template
@@ -23,6 +22,12 @@ type Galleries struct {
 	}
 	GalleryService *models.GalleryService
 }
+
+// This is a type of function that takes the given inputs and returns an error
+// Any function that takes in these inputs and returns an error is of type galleryOpt
+// The primary purpose of this type of functions is to perform middleware actions on Gallery
+// such as authenticating user
+type galleryOpt func(http.ResponseWriter, *http.Request, *models.Gallery) error
 
 func (g Galleries) New(w http.ResponseWriter, r *http.Request) {
 	var data struct {
@@ -50,30 +55,59 @@ func (g Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, editPath, http.StatusFound)
 }
 
-func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id")) //Get the URL parametere "id" value
+// The 'opts ...galleryOpt' is a parameter which accepts any numer of galleryOpt type of functions (defined above)
+// Using that allows us to pass functions as an input to galleryByID
+// That way, we can authenticate the user access right after fetching the gallery by ID
+// Or we can pass other middleware applications which are of type galleryOpt which perform some action on the gallery and return an error if possible
+func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request, opts ...galleryOpt) (*models.Gallery, error) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		emptyData := struct {
-			ID    int
-			Title string
-		}{}
-		g.Templates.Edit.Execute(w, r, emptyData, errors.Public(err, "Invalid gallery ID"))
-		return
+		http.Error(w, "Invalid ID", http.StatusNotFound)
+		return nil, err
 	}
 	gallery, err := g.GalleryService.ByID(id)
 	if err != nil {
-		if err == models.ErrNotFound {
+		if errors.Is(err, models.ErrNotFound) {
 			http.Error(w, "Gallery not found", http.StatusNotFound)
-			return
+			return nil, err
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return nil, err
+	}
+
+	// 'range opts' will return (index, function)
+	// We don't care about the index so we skip that
+	// All functions are used, parameters are passed and if there's an error, we return that
+	// Currently we only have user authentication, but if we develop an other such method, we can pass it here
+	// as a variadic parameter and it will be evaluated in this for loop
+	for _, opt := range opts {
+		err = opt(w, r, gallery)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return gallery, nil
+}
+
+// userMustOwnGallery is of type galleryOpt because it has the same input and output types
+func userMustOwnGallery(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
+	user := context.User(r.Context())
+	if user.ID != gallery.UserID {
+		http.Error(w, "You are not authorized to edit this gallery", http.StatusForbidden)
+		return fmt.Errorf("user does not have access to this gallery")
+	}
+	return nil
+}
+
+func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery) // Pass userMustOwnGallery as a variaidc parameter
+	if err != nil {
 		return
 	}
 
 	// Before we can render the gallery information, we need to verify that the user actually owns this gallery.
-	user := context.User(r.Context())
-	if gallery.UserID != user.ID {
-		http.Error(w, "You are not authorized to edit this gallery", http.StatusForbidden)
+	err = userMustOwnGallery(w, r, gallery)
+	if err != nil {
 		return
 	}
 
@@ -88,24 +122,13 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery) // Pass userMustOwnGallery as a variaidc parameter
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusNotFound)
 		return
 	}
-
-	gallery, err := g.GalleryService.ByID(id)
+	// Before we can render the gallery information, we need to verify that the user actually owns this gallery.
+	err = userMustOwnGallery(w, r, gallery)
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			http.Error(w, "Gallery not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		return
-	}
-	user := context.User(r.Context())
-	if gallery.UserID != user.ID {
-		http.Error(w, "You are not authorized to edit this gallery", http.StatusForbidden)
 		return
 	}
 
@@ -150,18 +173,8 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 
 // Anyone with a link to a gallery will be able to view it, even users who have not signed in
 func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	gallery, err := g.galleryByID(w, r)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusNotFound)
-		return
-	}
-	gallery, err := g.GalleryService.ByID(id)
-	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			http.Error(w, "Gallery not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
 
