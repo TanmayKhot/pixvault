@@ -1,23 +1,35 @@
 {{template "header" .}}
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Replace the <link> tag we have with this -->
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
 
 <div class="px-8 py-12 w-full">
-  <h1 class="pt-4 pb-8 text-3xl font-bold text-gray-900">
-    {{.Title}}
-  </h1>
-  <div class="columns-4 gap-4 space-y-4">
-  {{range .Images}}
-  <div class="h-min w-full">
-    <a href="{{.}}">
-      <img class="w-full" src="{{.}}">
+  <!-- Back button and Album Title -->
+  <div class="flex items-center space-x-4 pb-8">
+    <a
+      href="/galleries"
+      class="w-10 h-10 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full flex items-center justify-center shadow"
+      title="Back to galleries"
+    >
+      &#8592;
     </a>
+    <h1 class="text-3xl font-bold text-gray-900">
+      {{.Title}}
+    </h1>
   </div>
-  {{end}}
+
+  <!-- Image Grid -->
+  <div class="columns-4 gap-4 space-y-4">
+    {{range .Images}}
+    <div class="h-min w-full">
+      <a href="{{.}}">
+        <img class="w-full" src="{{.}}">
+      </a>
+    </div>
+    {{end}}
+  </div>
 </div>
-</div>
+
 {{template "footer" .}}

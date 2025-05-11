@@ -1,23 +1,55 @@
 {{template "header" .}}
 
 <div class="p-8 w-full">
-  <h1 class="pt-4 pb-8 text-3xl font-bold text-gray-800">
-    Edit your Gallery
-  </h1>
 
+  <!-- Title section with Back Button -->
+  <div class="flex items-center space-x-4 pb-4">
+    <a
+      href="/galleries"
+      class="w-10 h-10 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full flex items-center justify-center shadow"
+      title="Back to galleries"
+    >
+      &#8592;
+    </a>
+    <h1 class="text-3xl font-bold text-gray-800">Edit your Gallery</h1>
+  </div>
+
+  <!-- View Gallery Button -->
+  <a
+    href="/galleries/{{.ID}}"
+    class="inline-block mb-6 px-6 py-2 bg-yellow-300 hover:bg-yellow-400 text-gray-800 font-semibold rounded shadow"
+  >
+    View Gallery
+  </a>
+
+  <!-- Form to update gallery -->
   <form action="/galleries/{{.ID}}" method="post">
     <div class="hidden">
       {{csrfField}}
     </div>
-    <div class="py-2">
-      <label for="title" class="text-sm font-semibold text-gray-800">
+
+    <!-- Current Title Display -->
+    <div class="py-4">
+      <label class="block text-sm font-semibold text-gray-800 pb-1">
+        Current Title
+      </label>
+      <div
+        class="w-1/3 px-3 py-2 border border-gray-300 text-gray-800 rounded bg-gray-50"
+      >
+        {{.Title}}
+      </div>
+    </div>
+
+    <!-- New Title Input -->
+    <div class="py-4">
+      <label for="title" class="block text-sm font-semibold text-gray-800 pb-1">
         New Title
       </label>
       <input
         name="title"
         id="title"
         type="text"
-        placeholder="Enter new Gallery Title"
+        placeholder="Enter new title"
         required
         class="
           w-1/3
@@ -28,11 +60,12 @@
           text-gray-800
           rounded
         "
-        value="{{.Title}}"
         autofocus
       />
     </div>
-    <div class="py-4">
+
+    <!-- Update and Delete Buttons -->
+    <div class="py-4 flex space-x-4">
       <button
         type="submit"
         class="
@@ -48,12 +81,13 @@
       >
         Update
       </button>
-    </div>
-  </form>
+    </form>
 
-  <div class="py-4">
-    <h2 class="text-lg font-semibold text-red-700 mb-2">Dangerous actions</h2>
-    <form action="/galleries/{{.ID}}/delete" method="post" onsubmit="return confirm('Do you really want to delete this gallery?');">
+    <form
+      action="/galleries/{{.ID}}/delete"
+      method="post"
+      onsubmit="return confirm('Do you really want to delete this gallery?');"
+    >
       <div class="hidden">
         {{csrfField}}
       </div>

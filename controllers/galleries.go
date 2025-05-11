@@ -140,7 +140,7 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
-	http.Redirect(w, r, editPath, http.StatusNotFound)
+	http.Redirect(w, r, editPath, http.StatusFound)
 }
 
 func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
