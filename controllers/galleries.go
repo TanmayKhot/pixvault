@@ -92,8 +92,9 @@ func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request, opts ...g
 // userMustOwnGallery is of type galleryOpt because it has the same input and output types
 func userMustOwnGallery(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
 	user := context.User(r.Context())
-	if user.ID != gallery.UserID {
-		http.Error(w, "You are not authorized to edit this gallery", http.StatusForbidden)
+
+	if user == nil || user.ID != gallery.UserID {
+		http.Error(w, "You are not authorized to view this gallery", http.StatusForbidden)
 		return fmt.Errorf("user does not have access to this gallery")
 	}
 	return nil
@@ -112,11 +113,16 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		ID    int
-		Title string
+		ID     int
+		Title  string
+		Access string
 	}{
 		ID:    gallery.ID,
 		Title: gallery.Title,
+	}
+	data.Access = "Public"
+	if gallery.IsPrivate {
+		data.Access = "Private"
 	}
 	g.Templates.Edit.Execute(w, r, data)
 }
@@ -139,14 +145,29 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
-	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
+	editPath := fmt.Sprintf("/galleries/%d", gallery.ID)
+	http.Redirect(w, r, editPath, http.StatusFound)
+}
+
+func (g Galleries) ChangeAccess(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery)
+	if err != nil {
+		return
+	}
+	err = g.GalleryService.ChangeAccess(gallery.ID)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	editPath := fmt.Sprintf("/galleries/%d", gallery.ID)
 	http.Redirect(w, r, editPath, http.StatusFound)
 }
 
 func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 	type Gallery struct {
-		ID    int
-		Title string
+		ID     int
+		Title  string
+		Access string
 	}
 	var data struct {
 		Galleries []Gallery
@@ -162,10 +183,16 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, gallery := range galleries {
+		access := "Public"
+		if gallery.IsPrivate {
+			access = "Private"
+		}
 		data.Galleries = append(data.Galleries, Gallery{
-			ID:    gallery.ID,
-			Title: gallery.Title,
+			ID:     gallery.ID,
+			Title:  gallery.Title,
+			Access: access,
 		})
+
 	}
 
 	g.Templates.Index.Execute(w, r, data)
@@ -178,13 +205,34 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(gallery.ID, gallery.IsPrivate)
+
+	if gallery.IsPrivate {
+
+		err = userMustOwnGallery(w, r, gallery)
+		if err != nil {
+			fmt.Println("Current user does not own this gallery")
+			return
+		}
+
+	}
+
 	var data struct {
-		ID     int
-		Title  string
-		Images []string
+		ID        int
+		Title     string
+		Images    []string
+		UserID    int
+		UserEmail string
+		Access    string
 	}
 	data.ID = gallery.ID
 	data.Title = gallery.Title
+	data.UserID = gallery.UserID
+	data.UserEmail = gallery.UserEmail
+	data.Access = "Public"
+	if gallery.IsPrivate {
+		data.Access = "Private"
+	}
 
 	for i := 0; i < 20; i++ {
 		// width and height are random values betwee 200 and 700

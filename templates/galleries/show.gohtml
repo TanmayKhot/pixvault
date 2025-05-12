@@ -6,19 +6,35 @@
 </head>
 
 <div class="px-8 py-12 w-full">
-  <!-- Back button and Album Title -->
-  <div class="flex items-center space-x-4 pb-8">
-    <a
-      href="/galleries"
-      class="w-10 h-10 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full flex items-center justify-center shadow"
-      title="Back to galleries"
-    >
-      &#8592;
-    </a>
-    <h1 class="text-3xl font-bold text-gray-900">
-      {{.Title}}
-    </h1>
-  </div>
+    <!-- Back button and Album Title -->
+    <div class="flex items-center space-x-4 pb-8">
+      <a
+        href="/galleries"
+        class="w-10 h-10 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full flex items-center justify-center shadow"
+        title="Back to galleries"
+      >
+        &#8592;
+      </a>
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+            {{.Title}}
+        
+            {{if eq .Access "Private"}}
+              <span class="ml-4 inline-block px-3 py-1 bg-gray-200 text-gray-700 text-sm font-semibold rounded">
+                Private
+              </span>
+            {{else}}
+              <span class="ml-4 inline-block px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded">
+                Public
+              </span>
+            {{end}}
+          </h1>
+        <p class="text-lg text-gray-500 pt-1">
+          Gallery owner: {{.UserEmail}}
+        </p>
+      </div>
+    </div>
+  
 
   <!-- Image Grid -->
   <div class="columns-4 gap-4 space-y-4">

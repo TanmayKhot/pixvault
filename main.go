@@ -183,6 +183,7 @@ func main() {
 			r.Get("/new", galleriesC.New)
 			r.Post("/", galleriesC.Create)
 			r.Get("/{id}/edit", galleriesC.Edit)
+			r.Post("/{id}/access", galleriesC.ChangeAccess)
 			r.Post("/{id}", galleriesC.Update)
 			r.Post("/{id}/delete", galleriesC.Delete)
 		})

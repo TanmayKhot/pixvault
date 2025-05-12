@@ -6,9 +6,11 @@ import (
 )
 
 type Gallery struct {
-	ID     int
-	UserID int
-	Title  string
+	ID        int
+	UserID    int
+	Title     string
+	UserEmail string
+	IsPrivate bool
 }
 
 type GalleryService struct {
@@ -35,10 +37,12 @@ func (service *GalleryService) ByID(id int) (*Gallery, error) {
 		ID: id,
 	}
 	row := service.DB.QueryRow(`
-		SELECT title, user_id
-		FROM galleries
-		WHERE id = $1;`, gallery.ID)
-	err := row.Scan(&gallery.Title, &gallery.UserID)
+		SELECT g.title, g.user_id, u.email, g.isprivate
+		FROM galleries g
+		LEFT JOIN users u
+		ON u.id = g.user_id
+		WHERE g.id = $1;`, gallery.ID)
+	err := row.Scan(&gallery.Title, &gallery.UserID, &gallery.UserEmail, &gallery.IsPrivate)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -52,7 +56,7 @@ func (service *GalleryService) ByID(id int) (*Gallery, error) {
 
 func (service *GalleryService) ByUserID(userID int) ([]Gallery, error) {
 	rows, err := service.DB.Query(`
-		SELECT id, title
+		SELECT id, title, isprivate
 		FROM galleries
 		WHERE user_id = $1;`, userID)
 
@@ -66,7 +70,7 @@ func (service *GalleryService) ByUserID(userID int) ([]Gallery, error) {
 		gallery := Gallery{
 			UserID: userID,
 		}
-		err := rows.Scan(&gallery.ID, &gallery.Title)
+		err := rows.Scan(&gallery.ID, &gallery.Title, &gallery.IsPrivate)
 		if err != nil {
 			return nil, fmt.Errorf("query galleries by user: %w", err)
 		}
@@ -89,6 +93,18 @@ func (service *GalleryService) Update(gallery *Gallery) error {
 
 	if err != nil {
 		return fmt.Errorf("update gallery: %w", err)
+	}
+	return nil
+}
+
+func (service *GalleryService) ChangeAccess(id int) error {
+	_, err := service.DB.Exec(`
+		UPDATE galleries
+		SET isprivate = NOT isprivate
+		WHERE id = $1;`, id)
+
+	if err != nil {
+		return fmt.Errorf("change access: %w", err)
 	}
 	return nil
 }
