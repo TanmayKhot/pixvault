@@ -11,7 +11,7 @@
       &#8592;
     </a>
     
-    <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+    <h6 class="text-lg font-bold text-gray-800 flex items-center">
       Edit your Gallery
   
       {{if eq .Access "Private"}}
@@ -23,38 +23,62 @@
           Public
         </span>
       {{end}}
-    </h1>
+    </h6>
   </div>
 
+  <h1 class="text-6xl font-bold text-gray-800 flex items-center">
+    {{.Title}}
+  </h1>
 
-  <!-- View Gallery Button -->
-  <a
-    href="/galleries/{{.ID}}"
-    class="inline-block mb-6 px-6 py-2 bg-yellow-300 hover:bg-yellow-400 text-gray-800 font-semibold rounded shadow"
-  >
-    View Gallery
-  </a>
+  <!-- Gallery Actions: Rename, Toggle Access, Delete -->
+  <div class="py-4 w-full flex space-x-4 items-start">
 
-  <!-- Form to update gallery -->
-  <form action="/galleries/{{.ID}}" method="post">
-    <div class="hidden">
-      {{csrfField}}
-    </div>
+    <!-- Rename Toggle Button -->
+    <button
+      type="button"
+      onclick="document.getElementById('rename-section').classList.toggle('hidden')"
+      class="py-2 px-6 bg-yellow-400 hover:bg-yellow-500 text-gray-800 rounded font-bold text-lg"
+    >
+      Rename the gallery
+    </button>
 
-    <!-- Current Title Display -->
-    <div class="py-4">
-      <label class="block text-sm font-semibold text-gray-800 pb-1">
-        Current Title
-      </label>
-      <div
-        class="w-1/3 px-3 py-2 border border-gray-300 text-gray-800 rounded bg-gray-50"
-      >
-        {{.Title}}
+    <!-- Toggle Access Form -->
+    <form action="/galleries/{{.ID}}/access" method="post">
+      <div class="hidden">
+        {{csrfField}}
       </div>
-    </div>
+      <button
+        type="submit"
+        class="py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg"
+      >
+        {{if eq .Access "Private"}}Make it public{{else}}Make it private{{end}}
+      </button>
+    </form>
 
-    <!-- New Title Input -->
-    <div class="py-4">
+    <!-- Delete Form -->
+    <form
+      action="/galleries/{{.ID}}/delete"
+      method="post"
+      onsubmit="return confirm('Do you really want to delete this gallery?');"
+    >
+      <div class="hidden">
+        {{csrfField}}
+      </div>
+      <button
+        type="submit"
+        class="py-2 px-6 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-lg"
+      >
+        Delete gallery
+      </button>
+    </form>
+  </div>
+
+  <!-- Rename Form (initially hidden) -->
+  <div id="rename-section" class="py-4 hidden">
+    <form action="/galleries/{{.ID}}" method="post">
+      <div class="hidden">
+        {{csrfField}}
+      </div>
       <label for="title" class="block text-sm font-semibold text-gray-800 pb-1">
         New Title
       </label>
@@ -72,58 +96,34 @@
           placeholder-gray-500
           text-gray-800
           rounded
+          mb-2
         "
         autofocus
       />
-    </div>
+      <button
+        type="submit"
+        class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg"
+      >
+        Update title
+      </button>
+    </form>
+  </div>
 
- <!-- Update Title and Access Buttons Side by Side -->
- <div class="py-4 w-1/3 flex space-x-4">
-  <!-- Form to update title -->
-  <form action="/galleries/{{.ID}}" method="post">
-    <div class="hidden">
-      {{csrfField}}
+  <!-- Display images -->
+  <div class="py-4">
+    <h2 class="pb-2 text-sm font-semibold text-gray-800">Current Images</h2>
+    <div class="py-2 grid grid-cols-8 gap-2">
+      {{range .Images}}
+        <div class="h-min w-full relative">
+          <!-- Add this part -->
+          <div class="absolute top-2 right-2">
+            {{template "delete_image_form" .}}
+          </div>
+          <img class="w-full" src="/galleries/{{.GalleryID}}/images/{{.FilenameEscaped}}">
+        </div>
+      {{end}}
     </div>
-    <button
-      type="submit"
-      class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg"
-    >
-      Update title
-    </button>
-  </form>
-
-  <!-- Form to toggle access -->
-  <form action="/galleries/{{.ID}}/access" method="post">
-    <div class="hidden">
-      {{csrfField}}
-    </div>
-    <button
-      type="submit"
-      class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg"
-    >
-      {{if eq .Access "Private"}}Make it public{{else}}Make it private{{end}}
-    </button>
-  </form>
-</div>
-
-<!-- Delete Button on its own line -->
-<div class="py-4">
-  <form
-    action="/galleries/{{.ID}}/delete"
-    method="post"
-    onsubmit="return confirm('Do you really want to delete this gallery?');"
-  >
-    <div class="hidden">
-      {{csrfField}}
-    </div>
-    <button
-      type="submit"
-      class="py-2 px-8 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-lg"
-    >
-      Delete
-    </button>
-  </form>
-</div>
+  </div>
 
 </div>
 

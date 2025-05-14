@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/TanmayKhot/pixvault/context"
@@ -111,10 +112,17 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	type Image struct {
+		GalleryID       int
+		Filename        string
+		FilenameEscaped string
+	}
+
 	data := struct {
 		ID     int
 		Title  string
 		Access string
+		Images []Image
 	}{
 		ID:    gallery.ID,
 		Title: gallery.Title,
@@ -122,6 +130,20 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	data.Access = "Public"
 	if gallery.IsPrivate {
 		data.Access = "Private"
+	}
+
+	images, err := g.GalleryService.Images(gallery.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "something went wrong", http.StatusInternalServerError)
+		return
+	}
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID:       image.GalleryID,
+			Filename:        image.Filename,
+			FilenameEscaped: url.PathEscape(image.Filename),
+		})
 	}
 	g.Templates.Edit.Execute(w, r, data)
 }
@@ -215,8 +237,9 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare image struct to show single image
 	type Image struct {
-		GalleryID int
-		Filename  string
+		GalleryID       int
+		Filename        string
+		FilenameEscaped string
 	}
 
 	// Prepare data to show all images of gallery
@@ -259,8 +282,9 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 
 	for _, image := range images {
 		data.Images = append(data.Images, Image{
-			GalleryID: image.GalleryID,
-			Filename:  image.Filename,
+			GalleryID:       image.GalleryID,
+			Filename:        image.Filename,
+			FilenameEscaped: url.PathEscape(image.Filename), // using PathEscape to include characters for file names which could be URL restricted
 		})
 	}
 
