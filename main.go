@@ -177,6 +177,7 @@ func main() {
 	r.Get("/email-signin", usersC.VerifyEmailSignin)
 	r.Route("/galleries", func(r chi.Router) { //We want to restrict access to this page only to signed in users. Without that, anyone can open this page
 		r.Get("/{id}", galleriesC.Show)
+		r.Get("/{id}/images/{filename}", galleriesC.Image)
 		r.Group(func(r chi.Router) {
 			r.Use(umw.RequireUser)
 			r.Get("/", galleriesC.Index)

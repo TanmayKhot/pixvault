@@ -14,7 +14,7 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories (remove the comment below to include it)
+# Dependency directories 
 # vendor/
 
 # Go workspace file
@@ -26,3 +26,6 @@ go.work.sum
 
 # Configuration for docker
 .conf
+
+# Images directory in development
+images/

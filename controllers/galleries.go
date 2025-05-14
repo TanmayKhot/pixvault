@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -205,22 +204,26 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(gallery.ID, gallery.IsPrivate)
-
 	if gallery.IsPrivate {
 
 		err = userMustOwnGallery(w, r, gallery)
 		if err != nil {
-			fmt.Println("Current user does not own this gallery")
 			return
 		}
 
 	}
 
+	// Prepare image struct to show single image
+	type Image struct {
+		GalleryID int
+		Filename  string
+	}
+
+	// Prepare data to show all images of gallery
 	var data struct {
 		ID        int
 		Title     string
-		Images    []string
+		Images    []Image
 		UserID    int
 		UserEmail string
 		Access    string
@@ -234,13 +237,31 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		data.Access = "Private"
 	}
 
-	for i := 0; i < 20; i++ {
-		// width and height are random values betwee 200 and 700
-		w, h := rand.Intn(500)+200, rand.Intn(500)+200
-		// using the width and height, we generate a URL
-		catImageURL := fmt.Sprintf("https://placecats.com/%d/%d", w, h)
-		// Then we add the URL to our images.
-		data.Images = append(data.Images, catImageURL)
+	images, err := g.GalleryService.Images(gallery.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	/*
+		Display dummy cat pictures as placeholders
+
+		for i := 0; i < 20; i++ {
+			// width and height are random values betwee 200 and 700
+			w, h := rand.Intn(500)+200, rand.Intn(500)+200
+			// using the width and height, we generate a URL
+			catImageURL := fmt.Sprintf("https://placecats.com/%d/%d", w, h)
+			// Then we add the URL to our images.
+			data.Images = append(data.Images, catImageURL)
+		}
+	*/
+
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID: image.GalleryID,
+			Filename:  image.Filename,
+		})
 	}
 
 	g.Templates.Show.Execute(w, r, data)
@@ -259,3 +280,58 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
+
+func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
+	filename := chi.URLParam(r, "filename")
+	galleryID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusNotFound)
+		return
+	}
+
+	images, err := g.GalleryService.Images(galleryID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	var requestedImage models.Image
+	imageFound := false
+	for _, image := range images {
+		if filename == image.Filename {
+			requestedImage = image
+			imageFound = true
+			break
+		}
+	}
+
+	if !imageFound {
+		http.Error(w, "Image not found", http.StatusNotFound)
+	}
+
+	http.ServeFile(w, r, requestedImage.Path)
+}
+
+/*
+
+func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
+	filename := chi.URLParam(r, "filename")
+	galleryID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusNotFound)
+		return
+	}
+	image, err := g.GalleryService.Image(galleryID, filename)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			http.Error(w, "Image not found", http.StatusNotFound)
+			return
+		}
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	http.ServeFile(w, r, image.Path)
+}
+*/

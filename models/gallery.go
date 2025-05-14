@@ -2,7 +2,12 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Gallery struct {
@@ -15,6 +20,16 @@ type Gallery struct {
 
 type GalleryService struct {
 	DB *sql.DB
+	// ImagesDir is used to tell the GalleryService where to store and locate
+	// images. If not set, the GalleryService will default to using the "images"
+	// directory.
+	ImagesDir string
+}
+
+type Image struct {
+	Path      string
+	GalleryID int
+	Filename  string
 }
 
 func (service *GalleryService) Create(title string, userID int) (*Gallery, error) {
@@ -117,4 +132,68 @@ func (service *GalleryService) Delete(id int) error {
 		return fmt.Errorf("delete gallery by id: %w", err)
 	}
 	return nil
+}
+
+func (service *GalleryService) galleryDir(id int) string {
+	imagesDir := service.ImagesDir
+	if imagesDir == "" {
+		imagesDir = "images"
+	}
+	return filepath.Join(imagesDir, fmt.Sprintf("gallery-%d", id))
+}
+
+// List of valid extensions
+func (service *GalleryService) extensions() []string {
+	return []string{".jpg", ".png", ".jpeg", ".gif"}
+}
+
+// Check for valid file extension
+func hasExtension(file string, extensions []string) bool {
+	for _, ext := range extensions {
+		file = strings.ToLower(file)
+		ext = strings.ToLower(ext)
+		if filepath.Ext(file) == ext {
+			return true
+		}
+	}
+	return false
+}
+
+// Fetch all valid images from the respective gallery directory
+func (service *GalleryService) Images(galleryID int) ([]Image, error) {
+	globPattern := filepath.Join(service.galleryDir(galleryID), "*")
+	allFiles, err := filepath.Glob(globPattern)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving gallery images: %w", err)
+	}
+
+	var images []Image
+	for _, file := range allFiles {
+		if hasExtension(file, service.extensions()) {
+			images = append(images, Image{
+				Path:      file,
+				GalleryID: galleryID,
+				Filename:  filepath.Base(file),
+			})
+		}
+	}
+	return images, nil
+}
+
+// Fetch a single image
+func (service *GalleryService) Image(galleryID int, filename string) (Image, error) {
+	imagePath := filepath.Join(service.galleryDir(galleryID), filename)
+	_, err := os.Stat(imagePath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return Image{}, ErrNotFound
+		}
+		return Image{}, fmt.Errorf("querying for image: %w", err)
+	}
+
+	return Image{
+		Filename:  filename,
+		GalleryID: galleryID,
+		Path:      imagePath,
+	}, nil
 }
