@@ -115,7 +115,6 @@
     <div class="py-2 grid grid-cols-8 gap-2">
       {{range .Images}}
         <div class="h-min w-full relative">
-          <!-- Add this part -->
           <div class="absolute top-2 right-2">
             {{template "delete_image_form" .}}
           </div>
