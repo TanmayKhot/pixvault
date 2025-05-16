@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -209,4 +210,36 @@ func (service *GalleryService) DeleteImage(galleryID int, filename string) error
 		return fmt.Errorf("deleting image: %w", err)
 	}
 	return nil
+}
+
+// Upload an image
+func (service *GalleryService) CreateImage(galleryID int, filename string, contents io.Reader) error {
+	galleryDir := service.galleryDir(galleryID)
+	err := os.MkdirAll(galleryDir, 0755)
+	/*
+		This line creates the galleryDir and all parents directories if they dont exist
+
+		0755 represents the permission code when creating a directory
+		0 means it is an octal number
+		the second position (7) represents the permissions for Owner. 7 means read, write, execute
+		the third position (5) represents the permission for Group. 5 means read, write
+		The fourth position (5) represents the permissions for others
+		There are more combinations possible. Check online
+	*/
+	if err != nil {
+		return fmt.Errorf("create gallery-%d images directory: %w", galleryID, err)
+	}
+	imagePath := filepath.Join(galleryDir, filename)
+	dst, err := os.Create(imagePath)
+	if err != nil {
+		return fmt.Errorf("create image file: %w", err)
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, contents)
+	if err != nil {
+		return fmt.Errorf("copying contents to image: %w", err)
+	}
+	return nil
+
 }

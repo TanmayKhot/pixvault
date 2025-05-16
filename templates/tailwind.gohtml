@@ -104,3 +104,43 @@
   </button>
 </form>
 {{end}}
+
+
+{{define "upload_image_form"}}
+<!-- Upload Toggle Button -->
+<button
+  type="button"
+  onclick="document.getElementById('upload-form').classList.toggle('hidden')"
+  class="py-2 px-6 bg-green-200 hover:bg-green-300 text-green-800 rounded font-bold text-lg"
+>
+  Add New Images
+</button>
+
+<!-- Upload Form (initially hidden) -->
+<div id="upload-form" class="hidden mt-4">
+  <form action="/galleries/{{.ID}}/images"
+    method="post"
+    enctype="multipart/form-data">
+    {{csrfField}}
+    <div class="py-2">
+      <label for="images" class="block mb-2 text-sm font-semibold text-gray-800">
+        Upload Images
+        <p class="py-2 text-xs text-gray-600 font-normal">
+          Please only upload jpg, png, and gif files.
+        </p>
+      </label>
+      <input type="file" multiple
+        accept="image/png, image/jpeg, image/gif"
+        id="images" name="images"
+        class="mb-4"
+      />
+    </div>
+    <button
+      type="submit"
+      class="py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg"
+    >
+      Upload
+    </button>
+  </form>
+</div>
+{{end}}

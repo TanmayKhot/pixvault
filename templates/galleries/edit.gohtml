@@ -55,7 +55,9 @@
       </button>
     </form>
 
-    <!-- Delete Form -->
+      {{template "upload_image_form" .}}
+    
+
     <form
       action="/galleries/{{.ID}}/delete"
       method="post"
