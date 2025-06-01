@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "description": "Tailwind CSS build process",
   "scripts": {
-  "build": "npx tailwindcss -c tailwind.config.js -i styles.css -o /dst/styles.css",
-  "watch": "npx tailwindcss -c tailwind.config.js -i styles.css -o /dst/styles.css --watch --poll"
-}
-,
-  "devDependencies": {
-    "tailwindcss": "^4.1.8"
+    "build": "npx tailwindcss -c tailwind.config.js -i styles.css -o /dst/styles.css",
+    "watch": "npx tailwindcss -c tailwind.config.js -i styles.css -o /dst/styles.css --watch --poll"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.4.1"
   }
 }
