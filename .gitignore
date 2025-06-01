@@ -29,3 +29,6 @@ go.work.sum
 
 # Images directory in development
 images/
+
+# Node stuff
+node_modules/

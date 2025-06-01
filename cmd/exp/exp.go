@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/TanmayKhot/pixvault/models"
+	"os"
 )
 
 func main() {
-	gs := models.GalleryService{}
-	fmt.Println(gs.Images(1))
+	fmt.Println(os.Getenv("CSRF_KEY"))
 }

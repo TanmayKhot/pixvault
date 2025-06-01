@@ -35,24 +35,31 @@ func loadEnvConfig() (config, error) {
 	}
 
 	// TODO: Read the PSQL values from an ENV variable
-	cfg.PSQL = models.DefaultPostgresConfig()
+	cfg.PSQL = models.PostgresConfig{
+		Host:     os.Getenv("PSQL_HOST"),
+		Port:     os.Getenv("PSQL_PORT"),
+		User:     os.Getenv("PSQL_USER"),
+		Password: os.Getenv("PSQL_PASSWORD"),
+		Database: os.Getenv("PSQL_DATABASE"),
+		SSLMode:  os.Getenv("PSQL_SSLMODE"),
+	}
+	if cfg.PSQL.Host == "" && cfg.PSQL.Port == "" {
+		return cfg, fmt.Errorf("No PSQL Config provided.")
+	}
 
-	// TODO: Setup SMTP
 	cfg.SMTP.Host = os.Getenv("SMTP_HOST")
-	postStr := os.Getenv("SMTP_PORT")
-	cfg.SMTP.Port, err = strconv.Atoi(postStr)
+	portStr := os.Getenv("SMTP_PORT")
+	cfg.SMTP.Port, err = strconv.Atoi(portStr)
 	if err != nil {
 		return cfg, err
 	}
 	cfg.SMTP.Username = os.Getenv("SMTP_USERNAME")
 	cfg.SMTP.Password = os.Getenv("SMTP_PASSWORD")
 
-	// TODO: Read the CSRF values from an ENV variable
-	cfg.CSRF.Key = "gFvi45R4fy5xNBlnEeZtQbfAVCYEIAUX"
-	cfg.CSRF.Secure = false
+	cfg.CSRF.Key = os.Getenv("CSRF_KEY")
+	cfg.CSRF.Secure = os.Getenv("CSRF_SECURE") == "true"
 
-	// TODO: Read the server values from an ENV variable
-	cfg.Server.Address = ":3000"
+	cfg.Server.Address = os.Getenv("SERVER_ADDRESS")
 
 	return cfg, nil
 }
@@ -64,17 +71,25 @@ func main() {
 		panic(err)
 	}
 
+	err = run(cfg)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func run(cfg config) error {
+
 	// Setup the database connection
 	db, err := models.OpenDBConnection(cfg.PSQL)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer db.Close()
 
 	//err = models.MigrateFS(db, migrations.FS, ".")
 	err = models.Migrate(db, "migrations")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// Setup CSRF middleware
@@ -193,10 +208,10 @@ func main() {
 		})
 	})
 
+	assetsHandler := http.FileServer(http.Dir("assets"))
+	r.Get("/assets/*", http.StripPrefix("/assets", assetsHandler).ServeHTTP)
+
 	// Start the server
 	fmt.Println("Starting the server on %s...", cfg.Server.Address)
-	err = http.ListenAndServe(cfg.Server.Address, r)
-	if err != nil {
-		panic(err)
-	}
+	return http.ListenAndServe(cfg.Server.Address, r)
 }
